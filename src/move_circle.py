@@ -23,12 +23,15 @@ class Circle:
         self.x = position_x
         self.y = position_y
         self.theta_z = yaw
+
+        self.true_x = self.x - self.x0
+        self.true_y = self.y - self.y0
         
         if self.counter > 10:
             self.counter = 0
-            print ("X Y Z")
-            print("x = {:.3f}, y = {:.3f}, theta_z = {:.3f}".format(self.x,self.y,(self.theta_z * 180/math.pi)))
+            print("x = {:.3f}, y = {:.3f}, theta_z = {:.3f}".format(self.true_x, self.true_y, (self.theta_z * 180/math.pi)))
             print(self.second_lap)
+            print(self.final_lap)
         else:
             self.counter+=1
 
@@ -60,12 +63,13 @@ class Circle:
         self.x0 = 0.0
         self.y0 = 0.0
         self.theta_z0 = 0.0
+
+        self.true_x = 0
+        self.true_y = 0
         
         self.vel_cmd = Twist()
 
         self.startup = True
-
-        #self.second_lap = False
 
         self.ctrl_c = False
         rospy.on_shutdown(self.shutdownhook)
@@ -84,20 +88,31 @@ class Circle:
 
     def main_loop(self):
         while not self.ctrl_c:
-            self.laps = 0
             # specify the radius of the circle:
             path_rad = 0.5 # m
-            # linear velocity must be below 0.26m/s:
-            lin_vel = 0.2 # m/s
+            self.sm = 0 # put in init function
 
-            self.vel_cmd.linear.x = lin_vel
-            self.vel_cmd.angular.z = lin_vel / path_rad # rad/s
-
-            #if  self.theta_z > -0.100 and self.theta_z < - 0.90:
-            #    self.vel_cmd.angular.z = 0
-            #    self.vel_cmd.linear = 0
-            #    self.second_lap == True
+            if  not self.second_lap and not self.final_lap:
+                lin_vel = 0.2 # m/s
+                self.vel_cmd.linear.x = lin_vel
+                self.vel_cmd.angular.z = lin_vel / path_rad # rad/s
+                if (self.theta_z * 180/math.pi) < (-90)  and (self.theta_z * 180/math.pi) > (-100) :
+                    self.second_lap = True
+           
+            if  self.second_lap and not self.final_lap:   
+                lin_vel = 0.2 # m/s
+                self.vel_cmd.linear.x = lin_vel
+                self.vel_cmd.angular.z = - (lin_vel / path_rad) # rad/s
+                if (self.theta_z * 180/math.pi) < (-90)  and (self.theta_z * 180/math.pi) > (-80) : #Goes in here too fast
+                    self.sm +=1 
+                if self.sm > 1 :
+                    self.final_lap = True
             
+            if self.second_lap and self.final_lap:
+                self.vel_cmd.angular.z = 0
+                self.vel_cmd.linear.x = 0
+            
+
             self.pub.publish(self.vel_cmd)
             self.rate.sleep()
 
