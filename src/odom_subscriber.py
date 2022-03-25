@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # A simple ROS subscriber node in Python
 
-import rospy
+import rospy,math
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
 
@@ -22,7 +22,7 @@ class Subscriber():
         position_y = odom_data.pose.pose.position.y
         if self.counter > 10:
             self.counter = 0
-            print("x = {:.3f}, y = {:.3f}, theta_z = {:.3f}".format(position_x,position_y,yaw))
+            print("x = {:.3f}, y = {:.3f}, theta_z = {:.3f}".format(position_x,position_y,(yaw * 180/math.pi)))
         else:
             self.counter+=1
     
@@ -34,6 +34,8 @@ class Subscriber():
         self.sub = rospy.Subscriber(topic_name, Odometry, self.callback)
         rospy.loginfo(f"The '{self.node_name}' node is active...")
         self.counter = 0
+
+        self.rate = rospy.Rate(1)
 
     def main_loop(self):
         rospy.spin()

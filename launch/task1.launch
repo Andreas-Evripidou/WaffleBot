@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="team46" type="move_circle.py" name="circle_node"  output="screen">
+  </node>
+  
+</launch>
