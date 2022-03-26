@@ -81,12 +81,10 @@ class FindBox(object):
 
     def __init__(self):
 
+        self.min_distance = 100
+
         self.sub_odom = rospy.Subscriber("odom", Odometry, self.odom_callback)
         self.sub_scan = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
-
-        self.actionserver = actionlib.SimpleActionServer("/find_box_action_server", 
-            SearchAction, self.action_server_launcher, auto_start=False)
-        self.actionserver.start()
 
         self.startup = True
 
@@ -101,6 +99,10 @@ class FindBox(object):
         self.theta_z0 = 0.0
 
         self.robot_controller = Tb3Move()
+
+        self.actionserver = actionlib.SimpleActionServer("/find_box_action_server", 
+            SearchAction, self.action_server_launcher, auto_start=False)
+        self.actionserver.start()
 
     def action_server_launcher(self, goal):
         r = rospy.Rate(10)
