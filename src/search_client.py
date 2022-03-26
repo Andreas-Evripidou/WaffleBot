@@ -11,7 +11,6 @@ class SearchClient():
     def feedback_callback(self, feedback_data: SearchFeedback):
         self.distance_travelled = feedback_data.current_distance_travelled
         print(f"FEEDBACK: Current distance: {self.distance_travelled:.1f} meters. ")
-        
 
     def __init__(self):
         self.distance_travelled = 0
@@ -53,9 +52,11 @@ class SearchClient():
     def main(self):
         self.send_goal(velocity = 0.2, distance = 0.5)
         self.client.wait_for_result()
+        print(self.client.get_result)
         self.action_complete = True
 
-        print (self.client.get_result)
+        
+
 
         self.vel_cmd.linear.x = -0.1
         self.pub.publish(self.vel_cmd)
