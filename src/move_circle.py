@@ -29,7 +29,7 @@ class Circle:
         
         if self.counter > 10:
             self.counter = 0
-            print("x = {:.3f}, y = {:.3f}, theta_z = {:.3f}".format(self.true_x, self.true_y, (self.theta_z * 180/math.pi)))
+            print("x = {:.3f}, y = {:.3f}, theta_z = {:.3f}".format(self.true_x, self.true_y, (self.theta_z * 180/math.pi)+90))
             print("first lap: ",self.second_lap, "Second lab: ", self.final_lap)
         else:
             self.counter+=1
@@ -95,23 +95,23 @@ class Circle:
         while not self.ctrl_c:
             # specify the radius of the circle:
             path_rad = 0.5 # m
-
+            lin_vel = 0.2 # m/s
+           
             #If no laps are completed
             if  not self.second_lap:
-                lin_vel = 0.2 # m/s
+                
                 self.vel_cmd.linear.x = lin_vel
                 self.vel_cmd.angular.z = lin_vel / path_rad # rad/s
                 #If the robot's angle is between (-100)-(-90) degrees
-                if (self.theta_z * 180/math.pi) < (-90)  and (self.theta_z * 180/math.pi) > (-100) :
+                if (self.theta_z * 180/math.pi) < (-90)  and (self.theta_z * 180/math.pi) > (-95) :
                     self.second_lap = True
 
             #If the first laps are completed
             if  self.second_lap:  
-                lin_vel = 0.2 # m/s
                 self.vel_cmd.linear.x = lin_vel
                 self.vel_cmd.angular.z = - (lin_vel / path_rad) # rad/s
                 #If the robot's angle is between (-100)-(-90) degrees
-                if (self.theta_z * 180/math.pi) < (-90)  and (self.theta_z * 180/math.pi) > (-100) : #Goes in here too fast
+                if (self.theta_z * 180/math.pi) < (-85)  and (self.theta_z * 180/math.pi) > (-95) : #Goes in here too fast
                     self.sm +=1 
                 #Make sure to not stop early
                 if self.sm > 4 :
