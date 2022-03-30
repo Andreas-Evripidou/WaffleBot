@@ -28,8 +28,8 @@ class FindBox(object):
     def scan_callback(self, scan_data):
         # From the front of the robot, obtain a 20 degree 
         # arc of scan data either side of the x-axis 
-        left_arc = scan_data.ranges[0:21]
-        right_arc = scan_data.ranges[-20:]
+        left_arc = scan_data.ranges[0:31]
+        right_arc = scan_data.ranges[-30:]
         # combine the "left_arc" and "right_arc" data arrays, flip them so that 
         # the data is arranged from left (-20 degrees) to right (+20 degrees)
         # then convert to a numpy array
