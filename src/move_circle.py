@@ -26,12 +26,13 @@ class Circle:
 
         self.true_x = self.x - self.x0
         self.true_y = self.y - self.y0
+        self.true_z = self.theta_z - self.theta_z0
         
         if self.counter > 10:
             self.counter = 0
-            print("x = {:.3f}, y = {:.3f}, theta_z = {:.3f}".format(self.true_x, self.true_y, (self.theta_z * 180/math.pi)+90))
-            print(math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2))
-            print("first lap: ",self.second_lap, "Second lab: ", self.final_lap)
+            print("x = {:.3f}, y = {:.3f}, theta_z = {:.3f}".format(self.true_x, self.true_y, (self.theta_z * 180/math.pi)-(self.theta_z0 * 180/math.pi)))
+            #print("x = {:.3f}, y = {:.3f}, theta_z = {:.3f}".format(self.x, self.y, (self.theta_z * 180/math.pi)))
+            #print("first lap: ",self.second_lap, "Second lab: ", self.final_lap)
         else:
             self.counter+=1
 
@@ -87,7 +88,7 @@ class Circle:
         self.ctrl_c = True
 
     def main_loop(self):
-        self.sm = 0 # put in init function
+        self.sm = 0 #
         self.am = 0
         
         #Keeping track of the current lap
@@ -107,7 +108,6 @@ class Circle:
                 #If the robot's angle is between (-100)-(-90) degrees
                 if math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) < 0.05 and math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) > 0 :
                     self.am +=1
-                    print(self.am)
                 if self.am > 5 :
                     self.second_lap = True
 
