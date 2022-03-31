@@ -30,6 +30,7 @@ class Circle:
         if self.counter > 10:
             self.counter = 0
             print("x = {:.3f}, y = {:.3f}, theta_z = {:.3f}".format(self.true_x, self.true_y, (self.theta_z * 180/math.pi)+90))
+            print(math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2))
             print("first lap: ",self.second_lap, "Second lab: ", self.final_lap)
         else:
             self.counter+=1
@@ -87,6 +88,7 @@ class Circle:
 
     def main_loop(self):
         self.sm = 0 # put in init function
+        self.am = 0
         
         #Keeping track of the current lap
         self.final_lap = False
@@ -103,7 +105,10 @@ class Circle:
                 self.vel_cmd.linear.x = lin_vel
                 self.vel_cmd.angular.z = lin_vel / path_rad # rad/s
                 #If the robot's angle is between (-100)-(-90) degrees
-                if (self.theta_z * 180/math.pi) < (-90)  and (self.theta_z * 180/math.pi) > (-95) :
+                if math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) < 0.05 and math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) > 0 :
+                    self.am +=1
+                    print(self.am)
+                if self.am > 5 :
                     self.second_lap = True
 
             #If the first laps are completed
@@ -111,10 +116,10 @@ class Circle:
                 self.vel_cmd.linear.x = lin_vel
                 self.vel_cmd.angular.z = - (lin_vel / path_rad) # rad/s
                 #If the robot's angle is between (-100)-(-90) degrees
-                if (self.theta_z * 180/math.pi) < (-85)  and (self.theta_z * 180/math.pi) > (-95) : #Goes in here too fast
+                if math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) < 0.05 and math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) > 0 :
                     self.sm +=1 
                 #Make sure to not stop early
-                if self.sm > 4 :
+                if self.sm > 5 :
                     self.final_lap = True
 
             #If both laps are completd
