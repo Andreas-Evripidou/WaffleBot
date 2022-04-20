@@ -89,12 +89,12 @@ class SearchClient():
             turn_speed = 1
 
             if (result.closest_object_angle <= 0):
-                while (abs(self.theta_z - temp_z) < 1):
+                while (abs(self.theta_z - temp_z) < 1.2):
                     self.vel_cmd.angular.z = -turn_speed
                     self.pub.publish(self.vel_cmd)
                 
             else:
-                while (abs(self.theta_z - temp_z) < 1):
+                while (abs(self.theta_z - temp_z) < 1.2):
                     self.vel_cmd.angular.z = turn_speed
                     self.pub.publish(self.vel_cmd)
             self.vel_cmd.angular.z = 0
