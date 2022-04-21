@@ -88,8 +88,9 @@ class Circle:
         self.ctrl_c = True
 
     def main_loop(self):
-        self.sm = 0 #
-        self.am = 0
+        #tick counters dut to high rospy rate
+        self.sm = 0 #tick counter for second lap
+        self.am = 0 #tick counter for first lap
         
         #Keeping track of the current lap
         self.final_lap = False
@@ -102,10 +103,8 @@ class Circle:
            
             #If no laps are completed
             if  not self.second_lap:
-                
                 self.vel_cmd.linear.x = lin_vel
                 self.vel_cmd.angular.z = lin_vel / path_rad # rad/s
-                #If the robot's angle is between (-100)-(-90) degrees
                 if math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) < 0.05 and math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) > 0 :
                     self.am +=1
                 if self.am > 5 :
@@ -115,14 +114,13 @@ class Circle:
             if  self.second_lap:  
                 self.vel_cmd.linear.x = lin_vel
                 self.vel_cmd.angular.z = - (lin_vel / path_rad) # rad/s
-                #If the robot's angle is between (-100)-(-90) degrees
                 if math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) < 0.05 and math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) > 0 :
                     self.sm +=1 
                 #Make sure to not stop early
                 if self.sm > 5 :
                     self.final_lap = True
 
-            #If both laps are completd
+            #If both laps are completed
             if self.final_lap:
                 self.ctrl_c = True
             
