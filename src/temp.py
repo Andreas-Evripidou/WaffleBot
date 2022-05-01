@@ -55,7 +55,7 @@ def camera_cb(img_data):
         blue_mask = cv2.inRange(hsv_img, blue_lower_threshold, blue_upper_threshold)
 
         if blue_mask.any():
-            print ("eivramen to")
+            print ("blue")
 
         waiting_for_image = False
 
