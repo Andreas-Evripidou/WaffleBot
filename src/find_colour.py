@@ -96,16 +96,26 @@ class colour_search(object):
 
         # print(f"Obtained an image of height {height}px and width {width}px.")
 
+<<<<<<< HEAD
         crop_width = width - 400
         crop_height = 100
+=======
+        crop_width = width - 700
+        crop_height = 50
+>>>>>>> f3c5eb86a7dcfd9a4597a570d40d7f0df68e727a
         crop_y0 = int((width / 2) - (crop_width / 2))
         crop_z0 = int((height / 2) - (crop_height / 2))
         cropped_img = cv_img[crop_z0:crop_z0+crop_height + 500, crop_y0:crop_y0+crop_width]
 
         hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
         # Colours Thresholds       Turquoise         Red       Yellow           Green           Purple             Blue
+<<<<<<< HEAD
         lower_threshold = [(78, 160, 100),  (0, 190, 100), (26,98,100),   (57,150,100), (148, 250, 100), (115, 220, 100)]
         upper_threshold = [(95, 255, 255),  (10, 255, 255),(34,251,255), (63, 255, 255), (153, 275, 255), (130, 255, 255)]
+=======
+        lower_threshold = [(86, 150, 100),  (0, 190, 100), (26,98,100),   (57,150,100), (148, 250, 100), (115, 220, 100)]
+        upper_threshold = [(93, 250, 255),  (10, 255, 255),(34,251,255), (63, 255, 255), (153, 275, 255), (130, 255, 255)]
+>>>>>>> f3c5eb86a7dcfd9a4597a570d40d7f0df68e727a
 
         if self.target_found and self.target_colour == -1:
             
@@ -145,7 +155,11 @@ class colour_search(object):
             
             if not self.target_found :
                 print("I am initializing")
+<<<<<<< HEAD
                 time.sleep(0.8)
+=======
+                time.sleep(0.5)
+>>>>>>> f3c5eb86a7dcfd9a4597a570d40d7f0df68e727a
 
                 # Turn right
                 print("I am turning right")
@@ -164,7 +178,7 @@ class colour_search(object):
                 print("I am turning left")
                 self.robot_controller.set_move_cmd(0, 1.3)
                 self.robot_controller.publish()
-                time.sleep(1)
+                time.sleep(1.2)
                 self.robot_controller.set_move_cmd(0, 0)
                 self.robot_controller.publish() 
                 time.sleep(0.5)
@@ -174,12 +188,21 @@ class colour_search(object):
                 self.robot_controller.publish()
                 time.sleep(2)
 
+<<<<<<< HEAD
                 self.robot_controller.set_move_cmd(0, -1.82)
                 self.robot_controller.publish()
                 time.sleep(1)
                 self.robot_controller.set_move_cmd(0.26, 0)
                 self.robot_controller.publish()
                 time.sleep(0.5)
+=======
+                self.robot_controller.set_move_cmd(0, -1.57)
+                self.robot_controller.publish()
+                time.sleep(1.2)
+                self.robot_controller.set_move_cmd(0.26, 0)
+                self.robot_controller.publish()
+
+>>>>>>> f3c5eb86a7dcfd9a4597a570d40d7f0df68e727a
 
                 self.ready_to_beaconing = True
                 print ("kamno beaconing")
@@ -191,11 +214,16 @@ class colour_search(object):
             min_front_side = np.amin(self.front_arc[75:105])
 
             if self.seeing_beacon:
+<<<<<<< HEAD
                 if self.cz > 265 and self.cy > 600 and self.cy < 800 and min_front_side < 0.5:
+=======
+                if min_front_side < 0.40 and self.seeing_beacon:
+>>>>>>> f3c5eb86a7dcfd9a4597a570d40d7f0df68e727a
                     self.robot_controller.set_move_cmd(0, 0)
                     print("We fucking did it")
                     self.ctrl_c = True        
                 else:
+<<<<<<< HEAD
                     if(min_right_side < 0.45):
                         print ("deksi tixos")
                         self.robot_controller.set_move_cmd(0.14, 0.9)
@@ -215,11 +243,25 @@ class colour_search(object):
                             self.robot_controller.set_move_cmd(0.26, -0.4)
                 
                     
+=======
+                    print ("vlepo sto tzai pao")
+                    #vriski to kentro damesa
+                    if self.cy >= 300 and self.cy <= 400:
+                        self.robot_controller.set_move_cmd(0.26, 0)
+                        self.robot_controller.publish()
+                    if self.cy < 300:
+                        self.robot_controller.set_move_cmd(0.26, 0.30)
+                        self.robot_controller.publish()
+                    elif self.cy > 400:
+                        self.robot_controller.set_move_cmd(0.26, -0.30)
+                        self.robot_controller.publish()
+>>>>>>> f3c5eb86a7dcfd9a4597a570d40d7f0df68e727a
 
 
                     #self.robot_controller.set_move_cmd(0.26, 0)
                     #self.robot_controller.publish()
 
+<<<<<<< HEAD
             elif (min_front_side < 0.7):
                 self.robot_controller.set_move_cmd(0.3, 1.6)
 
@@ -231,6 +273,24 @@ class colour_search(object):
                 elif(min_right_side > 0.6):
                     self.robot_controller.set_move_cmd(0.26, -0.8)
             self.robot_controller.publish()
+=======
+            elif (min_front_side < 0.8):
+                self.robot_controller.set_move_cmd(0, 0)
+                self.robot_controller.publish()
+                self.robot_controller.set_move_cmd(0.04, 1.0)
+                self.robot_controller.publish()
+
+            else:        
+                if(min_right_side > 0.5 and min_right_side < 0.6):
+                    self.robot_controller.set_move_cmd(0.26, 0)
+                    self.robot_controller.publish()
+                elif(min_right_side < 0.5):
+                    self.robot_controller.set_move_cmd(0.26, 0.8)
+                    self.robot_controller.publish()
+                elif(min_right_side > 0.6):
+                    self.robot_controller.set_move_cmd(0.26, -0.8)
+                    self.robot_controller.publish()
+>>>>>>> f3c5eb86a7dcfd9a4597a570d40d7f0df68e727a
 
 
 
