@@ -101,21 +101,21 @@ class colour_search(object):
 
         # print(f"Obtained an image of height {height}px and width {width}px.")
 
-        crop_width = width - 400
-        crop_height = 400
+        crop_width = width - 700
+        crop_height = 50
         crop_y0 = int((width / 2) - (crop_width / 2))
         crop_z0 = int((height / 2) - (crop_height / 2))
         cropped_img = cv_img[crop_z0:crop_z0+crop_height, crop_y0:crop_y0+crop_width]
 
         hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
         # Colours Thresholds       Turquoise         Red       Yellow           Green           Purple             Blue
-        lower_threshold = [(86, 150, 100),(0, 190, 100), (26,98,100),   (57,150,100), (148, 250, 100), (118, 215, 100)]
-        upper_threshold = [(93, 250, 255),  (10, 255, 255),(34,251,255), (63, 255, 255), (153, 275, 255), (123, 253, 255)]
+        lower_threshold = [(86, 150, 100),  (0, 190, 100), (26,98,100),   (57,150,100), (148, 250, 100), (115, 220, 100)]
+        upper_threshold = [(93, 250, 255),  (10, 255, 255),(34,251,255), (63, 255, 255), (153, 275, 255), (130, 255, 255)]
 
         if self.target_found and self.target_colour == -1:
             
             index = 0
-            while self.target_found and self.target_colour == -1 :
+            while self.target_found and index < 6 :
                 mask = cv2.inRange(hsv_img, lower_threshold[index], upper_threshold[index]) 
 
                 m = cv2.moments(mask)
@@ -140,73 +140,52 @@ class colour_search(object):
 
             if self.m00 > self.m00_min:
                     cv2.circle(hsv_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
-                    print("efkalato foto re paithkia")
                     self.seeing_beacon = True
                     self.target_angle = self.cy
             else:
-                print("En to vlepo")
                 self.seeing_beacon = False
 
-
-    #     #Blue pillar bounds
-    #     lower = (115, 224, 100)
-    #     upper = (130, 255, 255)
-
-    #     #Cyan pillar bounds
-    #     #lower = (85, 158, 100)
-    #     #upper = (92, 255, 255)
-
-    #     #Green pillar bounds
-    #     #lower = (50, 170, 100)
-    #     #upper = (65, 255, 255)
-
-    #     #Red pillar bounds
-    #     #lower = (-2, 195, 100)
-    #     #upper = (6, 255, 255)
-
-    #     mask = cv2.inRange(hsv_img, lower, upper)
-    #     res = cv2.bitwise_and(crop_img, crop_img, mask = mask)
-
-    #     m = cv2.moments(mask)
-    #     self.m00 = m['m00']
-    #     self.cy = m['m10'] / (m['m00'] + 1e-5)
-
-    #     if self.m00 > self.m00_min:
-    #         cv2.circle(crop_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
-        
-    #     cv2.imshow('cropped image', crop_img)
-    #     cv2.waitKey(1)
 
     def main(self):
         while not self.ctrl_c:
             
             if not self.target_found :
                 print("I am initializing")
-                time.sleep(1)
+                time.sleep(0.5)
 
                 # Turn right
                 print("I am turning right")
                 self.robot_controller.set_move_cmd(0, -1.57)
                 self.robot_controller.publish()
-                time.sleep(1)
+                time.sleep(1.2)
                 self.robot_controller.set_move_cmd(0, 0)
                 self.robot_controller.publish()
                 
                 # Find target color
                 print("I am finding the target colour")
-                time.sleep(0.5)
                 self.target_found = True
 
                 # Turn left
                 print("I am turning left")
                 self.robot_controller.set_move_cmd(0, 1.57)
                 self.robot_controller.publish()
-                time.sleep(1)
+                time.sleep(1.2)
                 self.robot_controller.set_move_cmd(0, 0)
                 self.robot_controller.publish() 
 
                 print("Colour found: ", self.target_colour) 
-                time.sleep(1)
+                
+                self.robot_controller.set_move_cmd(0.26, 0)
+                self.robot_controller.publish()
+                time.sleep(2)
+
+                self.robot_controller.set_move_cmd(0, -1.57)
+                self.robot_controller.publish()
+                time.sleep(1.2)
+                self.robot_controller.set_move_cmd(0.26, 0)
+                self.robot_controller.publish()
+
+
                 self.ready_to_beaconing = True
                 print ("kamno beaconing")
 
@@ -216,43 +195,43 @@ class colour_search(object):
             min_front_side = np.amin(self.front_arc[75:105])
 
             if self.seeing_beacon:
-                if min_front_side < 0.45 and self.seeing_beacon:
+                if min_front_side < 0.40 and self.seeing_beacon:
                     self.robot_controller.set_move_cmd(0, 0)
                     self.robot_controller.publish()
                     print("We fucking did it")
-                    self.ctrl_c = True
+                    self.ctrl_c = True        
                 else:
-                    print ("vlepo to tzai pao")
+                    print ("vlepo sto tzai pao")
                     #vriski to kentro damesa
-                    if self.cy >= 250 and self.cy <= 450:
+                    if self.cy >= 300 and self.cy <= 400:
                         self.robot_controller.set_move_cmd(0.26, 0)
                         self.robot_controller.publish()
-                    if self.cy < 250:
-                        self.robot_controller.set_move_cmd(0.2, 0.30)
+                    if self.cy < 300:
+                        self.robot_controller.set_move_cmd(0.26, 0.30)
                         self.robot_controller.publish()
-                    elif self.cy > 450:
-                        self.robot_controller.set_move_cmd(0.2, -0.30)
+                    elif self.cy > 400:
+                        self.robot_controller.set_move_cmd(0.26, -0.30)
                         self.robot_controller.publish()
 
 
                     #self.robot_controller.set_move_cmd(0.26, 0)
                     #self.robot_controller.publish()
 
-            elif (min_front_side < 0.45):
+            elif (min_front_side < 0.8):
                 self.robot_controller.set_move_cmd(0, 0)
                 self.robot_controller.publish()
-                self.robot_controller.set_move_cmd(0, 1.0)
+                self.robot_controller.set_move_cmd(0.04, 1.0)
                 self.robot_controller.publish()
 
             else:        
-                if(min_right_side > 0.3 and min_right_side < 0.4):
+                if(min_right_side > 0.5 and min_right_side < 0.6):
                     self.robot_controller.set_move_cmd(0.26, 0)
                     self.robot_controller.publish()
-                elif(min_right_side < 0.3):
-                    self.robot_controller.set_move_cmd(0.26, 0.9)
+                elif(min_right_side < 0.5):
+                    self.robot_controller.set_move_cmd(0.26, 0.8)
                     self.robot_controller.publish()
-                elif(min_right_side > 0.4):
-                    self.robot_controller.set_move_cmd(0.26, -0.9)
+                elif(min_right_side > 0.6):
+                    self.robot_controller.set_move_cmd(0.26, -0.8)
                     self.robot_controller.publish()
 
 
