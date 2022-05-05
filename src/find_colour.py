@@ -58,9 +58,7 @@ class colour_search(object):
 
         self.robot_controller = Tb3Move()
         self.robot_odom = Tb3Odometry()
-        self.turn_vel_fast = -0.5
-        self.turn_vel_slow = -0.1
-        self.robot_controller.set_move_cmd(1.0, self.turn_vel_fast)
+        self.robot_controller.set_move_cmd(0,0)
         self.robot_controller.publish()
 
         self.move_rate = "" # fast, slow or stop
@@ -84,9 +82,10 @@ class colour_search(object):
 
         self.m00 = 0
         self.m00_min = 10000
-        self.target_angle = 0
 
     def shutdown_ops(self):
+        self.robot_controller.set_move_cmd(0,0)
+        self.robot_controller.publish()
         self.robot_controller.stop()
         cv2.destroyAllWindows()
         self.ctrl_c = True
@@ -102,20 +101,20 @@ class colour_search(object):
         # print(f"Obtained an image of height {height}px and width {width}px.")
 
         crop_width = width - 400
-        crop_height = 400
+        crop_height = 100
         crop_y0 = int((width / 2) - (crop_width / 2))
         crop_z0 = int((height / 2) - (crop_height / 2))
-        cropped_img = cv_img[crop_z0:crop_z0+crop_height, crop_y0:crop_y0+crop_width]
+        cropped_img = cv_img[crop_z0:crop_z0+crop_height + 500, crop_y0:crop_y0+crop_width]
 
         hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
         # Colours Thresholds       Turquoise         Red       Yellow           Green           Purple             Blue
-        lower_threshold = [(86, 150, 100),(0, 190, 100), (26,98,100),   (57,150,100), (148, 250, 100), (118, 215, 100)]
-        upper_threshold = [(93, 250, 255),  (10, 255, 255),(34,251,255), (63, 255, 255), (153, 275, 255), (123, 253, 255)]
+        lower_threshold = [(78, 160, 100),  (0, 190, 100), (26,98,100),   (57,150,100), (148, 250, 100), (115, 220, 100)]
+        upper_threshold = [(95, 255, 255),  (10, 255, 255),(34,251,255), (63, 255, 255), (153, 275, 255), (130, 255, 255)]
 
         if self.target_found and self.target_colour == -1:
             
             index = 0
-            while self.target_found and self.target_colour == -1 :
+            while self.target_found and index < 6 :
                 mask = cv2.inRange(hsv_img, lower_threshold[index], upper_threshold[index]) 
 
                 m = cv2.moments(mask)
@@ -126,7 +125,6 @@ class colour_search(object):
                 if self.m00 > self.m00_min:
                     cv2.circle(hsv_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
                     self.target_colour = index
-                    print("empika dames")
                 index += 1
             
         elif self.ready_to_beaconing:
@@ -137,123 +135,117 @@ class colour_search(object):
                 
             self.m00 = m["m00"]
             self.cy = m["m10"] / (m["m00"] + 1e-5)
+            self.cz = m['m01']/(m['m00']+1e-5) 
 
             if self.m00 > self.m00_min:
                     cv2.circle(hsv_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
-                    print("efkalato foto re paithkia")
                     self.seeing_beacon = True
-                    self.target_angle = self.cy
             else:
-                print("En to vlepo")
                 self.seeing_beacon = False
 
-
-    #     #Blue pillar bounds
-    #     lower = (115, 224, 100)
-    #     upper = (130, 255, 255)
-
-    #     #Cyan pillar bounds
-    #     #lower = (85, 158, 100)
-    #     #upper = (92, 255, 255)
-
-    #     #Green pillar bounds
-    #     #lower = (50, 170, 100)
-    #     #upper = (65, 255, 255)
-
-    #     #Red pillar bounds
-    #     #lower = (-2, 195, 100)
-    #     #upper = (6, 255, 255)
-
-    #     mask = cv2.inRange(hsv_img, lower, upper)
-    #     res = cv2.bitwise_and(crop_img, crop_img, mask = mask)
-
-    #     m = cv2.moments(mask)
-    #     self.m00 = m['m00']
-    #     self.cy = m['m10'] / (m['m00'] + 1e-5)
-
-    #     if self.m00 > self.m00_min:
-    #         cv2.circle(crop_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
-        
-    #     cv2.imshow('cropped image', crop_img)
-    #     cv2.waitKey(1)
 
     def main(self):
         while not self.ctrl_c:
             
+            min_right_side = np.amin(self.front_arc[115:150])
+            min_left_side = np.amin(self.front_arc[50:85]) 
+            min_front_side = np.amin(self.front_arc[75:105])
+
             if not self.target_found :
                 print("I am initializing")
-                time.sleep(1)
+                time.sleep(1.3)
 
                 # Turn right
                 print("I am turning right")
-                self.robot_controller.set_move_cmd(0, -1.57)
+                self.robot_controller.set_move_cmd(0, -1.3)
                 self.robot_controller.publish()
-                time.sleep(1)
+                time.sleep(1.2)
                 self.robot_controller.set_move_cmd(0, 0)
                 self.robot_controller.publish()
-                
+                time.sleep(0.5)
+
                 # Find target color
                 print("I am finding the target colour")
-                time.sleep(0.5)
                 self.target_found = True
 
                 # Turn left
                 print("I am turning left")
-                self.robot_controller.set_move_cmd(0, 1.57)
+                self.robot_controller.set_move_cmd(0, 1.3)
                 self.robot_controller.publish()
-                time.sleep(1)
+                time.sleep(1.2)
                 self.robot_controller.set_move_cmd(0, 0)
                 self.robot_controller.publish() 
-
+                time.sleep(0.5)
                 print("Colour found: ", self.target_colour) 
-                time.sleep(1)
-                self.ready_to_beaconing = True
-                print ("kamno beaconing")
+                
+                print("Fkeno ekso")
+                self.robot_controller.set_move_cmd(0.26, 0)
+                self.robot_controller.publish()
+                time.sleep(2.5)
 
-            
+                test = np.amin(self.front_arc[175:180]) 
 
-            min_right_side = np.amin(self.front_arc[120:150])
-            min_front_side = np.amin(self.front_arc[75:105])
-
-            if self.seeing_beacon:
-                if min_front_side < 0.45 and self.seeing_beacon:
-                    self.robot_controller.set_move_cmd(0, 0)
+                print(test)
+                if test > 0.65:
+                    print("en esiei tixo aristera are pao deksia")
+                    self.robot_controller.set_move_cmd(0, -1.82)
                     self.robot_controller.publish()
-                    print("We fucking did it")
-                    self.ctrl_c = True
-                else:
-                    print ("vlepo to tzai pao")
-                    #vriski to kentro damesa
-                    if self.cy >= 250 and self.cy <= 450:
-                        self.robot_controller.set_move_cmd(0.26, 0)
-                        self.robot_controller.publish()
-                    if self.cy < 250:
-                        self.robot_controller.set_move_cmd(0.2, 0.30)
-                        self.robot_controller.publish()
-                    elif self.cy > 450:
-                        self.robot_controller.set_move_cmd(0.2, -0.30)
-                        self.robot_controller.publish()
-
-
-                    #self.robot_controller.set_move_cmd(0.26, 0)
-                    #self.robot_controller.publish()
-
-            elif (min_front_side < 0.45):
-                self.robot_controller.set_move_cmd(0, 0)
-                self.robot_controller.publish()
-                self.robot_controller.set_move_cmd(0, 1.0)
-                self.robot_controller.publish()
-
-            else:        
-                if(min_right_side > 0.3 and min_right_side < 0.4):
+                    time.sleep(1)
                     self.robot_controller.set_move_cmd(0.26, 0)
                     self.robot_controller.publish()
-                elif(min_right_side < 0.3):
-                    self.robot_controller.set_move_cmd(0.26, 0.9)
+                    time.sleep(3.5)
+                    self.robot_controller.set_move_cmd(0.1, 0.9)
                     self.robot_controller.publish()
-                elif(min_right_side > 0.4):
-                    self.robot_controller.set_move_cmd(0.26, -0.9)
-                    self.robot_controller.publish()
+                    time.sleep(1.5)
+
+
+                self.ready_to_beaconing = True
+                print ("kamno beaconing")
+            
+
+            if self.seeing_beacon:
+                if self.cz > 265 and self.cy > 700 and self.cy < 800 and min_front_side < 0.5:
+                    print("We fucking did it")
+                    print ("to cz: ",self.cz," To cy: ", self.cy, " To front: ", min_front_side)
+                    self.ctrl_c = True        
+                else:
+                    if (min_front_side < 0.35):
+                        print ("mprosta tixos")
+                        self.robot_controller.set_move_cmd(-0.15, -0.8)
+                    elif(min_right_side < 0.45):
+                        print ("deksi tixos")
+                        self.robot_controller.set_move_cmd(0.14, 0.9)
+                        
+                    elif(min_left_side < 0.4):
+                        print ("arister tixos")
+                        self.robot_controller.set_move_cmd(0.08, -0.7)
+                    else:
+                        if self.cy >= 650 and self.cy <= 800:
+                            print("Vlepo to sto kentro")
+                            self.robot_controller.set_move_cmd(0.26, 0)
+                            self.robot_controller.publish()
+
+                        elif self.cy < 650:
+                            print("Vlepo to sto aristera mou")
+                            self.robot_controller.set_move_cmd(0.26, 0.4)
+                            self.robot_controller.publish()
+                        elif self.cy > 800:
+                            print("Vlepo to sto dexia mou")
+                            self.robot_controller.set_move_cmd(0.26, -0.4)
+            elif (min_front_side < 0.8) and min_left_side > 0.4:
+                print ("ivra tixo mprosta")
+                self.robot_controller.set_move_cmd(0.2, 1.5)
+            else:        
+                if(min_right_side > 0.5 and min_right_side < 0.6):
+                    print("Thelo dexio tixo")
+                    self.robot_controller.set_move_cmd(0.26, 0.1)
+                elif(min_right_side < 0.5):
+                    print("eimai polla konta dexia")
+                    self.robot_controller.set_move_cmd(0.26, 1.1)
+                elif(min_right_side > 0.6):
+                    print("eimai polla makria dexia")
+                    self.robot_controller.set_move_cmd(0.26, -0.8)
+            self.robot_controller.publish()
 
 
 
@@ -268,17 +260,3 @@ if __name__ == '__main__':
         search_instance.main()
     except rospy.ROSInterruptException:
         pass
-
-                # print("gurizo deksia")
-                # while abs(self.robot_odom.yaw - self.theta_z0) < 90:
-                #     self.robot_controller.set_move_cmd(0, self.turn_vel_fast)
-                #     self.robot_controller.publish()
-                # self.robot_controller.set_move_cmd(0,0)
-                # self.robot_controller.publish()
-
-                # print("gurizo aristera")
-                # while self.robot_odom.yaw > self.y0:
-                #     self.robot_controller.set_move_cmd(0,1.0)
-                #     self.robot_controller.publish()
-                # self.robot_controller.set_move_cmd(0,0)
-                # self.robot_controller.publish()
