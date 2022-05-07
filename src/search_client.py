@@ -3,108 +3,72 @@
 import rospy
 import actionlib
 from geometry_msgs.msg import Twist
-from nav_msgs.msg import Odometry
-from tf.transformations import euler_from_quaternion
 
-from com2009_msgs.msg import  SearchFeedback, SearchGoal, SearchAction
+from com2009_msgs.msg import SearchGoal, SearchAction,SearchFeedback
 
-class SearchClient():
+class SearchClient(object):
    
-    def feedback_callback(self, feedback_data: SearchFeedback):
+    def feedback_callback(self, feedback_data:SearchFeedback):
         self.distance_travelled = feedback_data.current_distance_travelled
         print(f"FEEDBACK: Current distance: {self.distance_travelled:.1f} meters. ")
+        if self.x < 100:
+            self.x += 1
+        else:
+            self.x = 0
 
-    def callback(self, odom_data):
-        orientation_x = odom_data.pose.pose.orientation.x
-        orientation_y = odom_data.pose.pose.orientation.y
-        orientation_z = odom_data.pose.pose.orientation.z
-        orientation_w = odom_data.pose.pose.orientation.w
-
-        position_x = odom_data.pose.pose.position.x
-        position_y = odom_data.pose.pose.position.y
-
-        (roll, pitch, yaw) = euler_from_quaternion([orientation_x, 
-                                orientation_y, orientation_z, orientation_w],
-                                'sxyz')
-
-        self.x = position_x
-        self.y = position_y
-        self.theta_z = yaw
 
     def __init__(self):
-        self.distance_travelled = 0
         self.action_complete = False
-
-        node_name = "find_box_action_client"
-        action_server_name = "/find_box_action_server"
         
-        rospy.init_node(node_name)
-
-        self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
-        self.sub = rospy.Subscriber('odom', Odometry, self.callback)
-
-        self.x = 0.0
-        self.y = 0.0
-        self.theta_z = 0.0
-
-        self.vel_cmd = Twist()
+        rospy.init_node("find_box_action_client")
 
         self.rate = rospy.Rate(1)
 
         self.goal = SearchGoal()
 
-        self.client = actionlib.SimpleActionClient(action_server_name, 
+        self.client = actionlib.SimpleActionClient("/find_box_action_server", 
                     SearchAction)
         self.client.wait_for_server()
-
+        
         self.ctrl_c = False
-
         rospy.on_shutdown(self.shutdown_ops)
 
+        self.distance = 0.0
+
+        self.x = 0
+
     def shutdown_ops(self):
-        if not self.action_complete:
+         if not self.action_complete:
             rospy.logwarn("Received a shutdown request. Cancelling Goal...")
             self.client.cancel_goal()
             rospy.logwarn("Goal Cancelled")
-            print(f"RESULT: {self.distance_travelled} m travelled")
-            self.vel_cmd.linear.x = 0
-            self.vel_cmd.angular.z = 0
-
-
-    def send_goal(self, velocity, distance):
+            
+    def send_goal(self, velocity, approach):
         self.goal.fwd_velocity = velocity
-        self.goal.approach_distance = distance
+        self.goal.approach_distance = approach
         
         # send the goal to the action server:
         self.client.send_goal(self.goal, feedback_cb=self.feedback_callback)
 
     def main(self):
-        while not self.ctrl_c:
-            self.send_goal(velocity = 0.26, distance = 0.5)
-            self.client.wait_for_result()
-            result = self.client.get_result()
-            self.action_complete = True
+        self.send_goal(velocity = .25, approach = 0.65)
+        StartTime = rospy.get_rostime()
+        print("the robot will now move for 90 seconds...")
+        while self.client.get_state() < 2:
+            if rospy.get_rostime().secs - StartTime.secs > 90 :
+                rospy.logwarn("Cancelling goal now...")
+                self.client.cancel_goal()
+                rospy.logwarn("Goal Cancelled")
+                rospy.loginfo('90 seconds have elapsed, stopping the robot...')
+                break
 
-            temp_z = self.theta_z
-            turn_speed = 1
-
-            if (result.closest_object_angle <= 0):
-                while (abs(self.theta_z - temp_z) < 1.2):
-                    self.vel_cmd.angular.z = -turn_speed
-                    self.pub.publish(self.vel_cmd)
-                
-            else:
-                while (abs(self.theta_z - temp_z) < 1.2):
-                    self.vel_cmd.angular.z = turn_speed
-                    self.pub.publish(self.vel_cmd)
-            self.vel_cmd.angular.z = 0
-            self.pub.publish(self.vel_cmd)
+            self.rate.sleep()
         
-            print(f"RESULT: Action State = {self.client.get_state()}")
+        self.ac1tion_complete = True
 
 if __name__ == '__main__':
-    action_instance = SearchClient()
+    ac_object = SearchClient()
     try:
-        action_instance.main()
+        ac_object.main()
     except rospy.ROSInterruptException:
         pass
