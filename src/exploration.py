@@ -153,6 +153,8 @@ class Maze:
             # print("Starting...", self.start)
             if self.start:
                 time.sleep(1)
+                right_sensor = np.amin(self.front_arc[130:140])
+
                 # While there is no wall in the right direction
                 while right_sensor > 0.35:
                     right_sensor = np.amin(self.front_arc[130:140])
@@ -165,7 +167,7 @@ class Maze:
                 print("Colour found: ", self.colours[self.colour_of_found_item])
                 self.robot_controller.set_move_cmd( -0.023, -0.8)
                 self.robot_controller.publish()
-                time.sleep(3.5)
+                time.sleep(4)
                 self.colour_of_found_item = -1
 
             # If there is a wall in front of the robot    
@@ -178,18 +180,18 @@ class Maze:
                 self.robot_controller.set_move_cmd(0, 0.7)
 
             # If there is a wall in the left and front direction
-            elif ( front_sensor < 0.4 and left_sensor < 0.5):
+            elif ( front_sensor < 0.4 and left_sensor < 0.4):
                 print("Wall found in front and left direction")
                 self.robot_controller.set_move_cmd(0, -0.7)
             else:  
 
                 # If there is no wall in the right direction
                 if (right_sensor < 0.3):
-                    self.robot_controller.set_move_cmd(0.15, 0.5) 
+                    self.robot_controller.set_move_cmd(0.2, 0.5) 
 
                 # Find the wall in the left direction
                 elif (left_sensor < 0.3):
-                    self.robot_controller.set_move_cmd(0.15, -0.7)
+                    self.robot_controller.set_move_cmd(0.2, -0.7)
 
                 # If there is not wall in the right direction
                 elif (right_sensor > 0.4):
