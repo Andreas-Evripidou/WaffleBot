@@ -86,7 +86,7 @@ class Maze:
         self.front_arc = np.empty(180)
 
         # SLAM file path
-        self.map_path =  Path.home().joinpath("catkin_ws/src/team46/maps/task5_map")
+        self.map_path = Path.home().joinpath("catkin_ws/src/team46/maps/task5_map")
 
         self.node_name = "maze_navigator"
         self.launch = roslaunch.scriptapi.ROSLaunch()
@@ -138,6 +138,11 @@ class Maze:
         # (by default all velocities will be zero):
         print("stopping the robot")
         self.pub.publish(Twist())
+        #node = roslaunch.core.Node(package="map_server",
+         #                   node_type="map_saver",
+         #                   args=f"-f {self.map_path}")
+
+        #process = self.launch.launch(node)
         self.ctrl_c = True
     
 
@@ -153,6 +158,8 @@ class Maze:
             # print("Starting...", self.start)
             if self.start:
                 time.sleep(1)
+                right_sensor = np.amin(self.front_arc[130:140])
+
                 # While there is no wall in the right direction
                 while right_sensor > 0.35:
                     right_sensor = np.amin(self.front_arc[130:140])
@@ -210,9 +217,12 @@ class Maze:
             self.robot_controller.publish()
 
             node = roslaunch.core.Node(package="map_server",
-                                       node_type="map_server",
-                                       args=f"-f{self.map_path}")
-            # self.launch = self.launch.launch(node)
+                            node_type="map_saver",
+                            args=f"-f {self.map_path}")
+
+            process = self.launch.launch(node)
+
+            
 
 
 
