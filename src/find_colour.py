@@ -73,6 +73,7 @@ class colour_search(object):
         self.x0 = 0.0
         self.y0 = 0.0
         self.theta_z0 = self.robot_odom.yaw
+        self.colours = ["Turqoise", "Yellow", "Red", "Green", "Purple", "Blue"]
         
         # For making sure we run the code only at the start
         self.target_found = False
@@ -107,14 +108,14 @@ class colour_search(object):
         cropped_img = cv_img[crop_z0:crop_z0+crop_height + 500, crop_y0:crop_y0+crop_width]
 
         hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
-        # Colours Thresholds       Turquoise         Red       Yellow           Green           Purple             Blue
-        lower_threshold = [(78, 160, 100),  (0, 190, 100), (26,98,100),   (57,150,100), (148, 250, 100), (115, 220, 100)]
-        upper_threshold = [(95, 255, 255),  (10, 255, 255),(34,251,255), (63, 255, 255), (153, 275, 255), (130, 255, 255)]
+        
+        lower_threshold = [(78, 160, 100),   (26,193,100), (0, 185, 100),  (57,150,100), (148, 250, 100), (115, 220, 100)]
+        upper_threshold = [(95, 255, 255),  (40,255,255), (10, 255, 255), (63, 255, 255), (153, 275, 255), (130, 255, 255)]
 
         if self.target_found and self.target_colour == -1:
             
             index = 0
-            while self.target_found and index < 6 :
+            while self.target_colour == -1 and index < 6 :
                 mask = cv2.inRange(hsv_img, lower_threshold[index], upper_threshold[index]) 
 
                 m = cv2.moments(mask)
@@ -125,7 +126,10 @@ class colour_search(object):
                 if self.m00 > self.m00_min:
                     cv2.circle(hsv_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
                     self.target_colour = index
+                    print("Colour found: ", self.colours[self.target_colour]) 
                 index += 1
+
+                
             
         elif self.ready_to_beaconing:
             colour_index = self.target_colour
@@ -153,7 +157,7 @@ class colour_search(object):
 
             if not self.target_found :
                 print("I am initializing")
-                time.sleep(1.3)
+                time.sleep(1)
 
                 # Turn right
                 print("I am turning right")
@@ -176,7 +180,7 @@ class colour_search(object):
                 self.robot_controller.set_move_cmd(0, 0)
                 self.robot_controller.publish() 
                 time.sleep(0.5)
-                print("Colour found: ", self.target_colour) 
+                print("Colour found: ", self.colours[self.target_colour]) 
                 
                 print("Fkeno ekso")
                 self.robot_controller.set_move_cmd(0.26, 0)
@@ -194,9 +198,9 @@ class colour_search(object):
                     self.robot_controller.set_move_cmd(0.26, 0)
                     self.robot_controller.publish()
                     time.sleep(3.5)
-                    self.robot_controller.set_move_cmd(0.1, 0.9)
+                    self.robot_controller.set_move_cmd(0.1, 1.0)
                     self.robot_controller.publish()
-                    time.sleep(1.5)
+                    time.sleep(1)
 
 
                 self.ready_to_beaconing = True
@@ -204,13 +208,14 @@ class colour_search(object):
             
 
             if self.seeing_beacon:
-                if self.cz > 265 and self.cy > 700 and self.cy < 800 and min_front_side < 0.5:
+                if self.cz > 265 and min_front_side < 0.5:
                     print("We fucking did it")
                     print ("to cz: ",self.cz," To cy: ", self.cy, " To front: ", min_front_side)
                     self.ctrl_c = True        
                 else:
                     if (min_front_side < 0.35):
                         print ("mprosta tixos")
+                        print ("to cz: ",self.cz," To cy: ", self.cy, " To front: ", min_front_side)
                         self.robot_controller.set_move_cmd(-0.15, -0.8)
                     elif(min_right_side < 0.45):
                         print ("deksi tixos")
