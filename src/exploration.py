@@ -1,8 +1,9 @@
 #! /usr/bin/env python3
 
 import rospy
-from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
+# Import path module
+from pathlib import Path
 import numpy as np
 from tf.transformations import euler_from_quaternion
 import time
@@ -19,6 +20,10 @@ from cv_bridge import CvBridge, CvBridgeError
 import argparse
 # Import String module
 from std_msgs.msg import String
+
+# Import path module
+
+
 
 
 
@@ -45,6 +50,11 @@ class Maze:
         # determine the angle at which the minimum distance value is located
         # in front oself.arc_anglesf the robot:
         self.object_angle = arc_angles[np.argmin(self.front_arc)]
+
+    def save_image(self, img, img_name):
+
+        full_image_path = self.base_image_path.joinpath(f"{img_name}.jpg")
+        cv2.imwrite(str(full_image_path), img)
 
     def camera_callback(self, img_data):  
         try:
@@ -77,12 +87,19 @@ class Maze:
             if self.m00 > self.m00_min:
                 cv2.circle(hsv_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
                 self.colour_of_found_item = index
+                self.waiting_for_image = True
+                
+                if not self.target_photo_taken and self.cy > 600 and self.cy < 1100:
+                    # self.waiting_for_image = False
+                    print(f"Obtained an image of height {height}px and width {width}px.")
+                    img_name = "the_beacon"
+                    self.save_image(cv_img, img_name)
+
+                    if self.target_colour == self.colours[index]:
+                        self.target_photo_taken = True
 
             index += 1
 
-    def save_image(image, image_name):
-        full_image_path = base_image_path.joinpath(f"{img_name}.jpg")
-        cv2.imwrite(str(full_image_path), img)
 
     def __init__(self):
 
@@ -93,7 +110,6 @@ class Maze:
 
         # Scan 
         self.sub_scan = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
-        self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
         rospy.init_node(self.node_name, anonymous=True)
         
         rospy.loginfo(f"The '{self.node_name}' node is active...")
@@ -112,19 +128,20 @@ class Maze:
         self.start = True
 
         # Initialize the target colour
-        self.colours = ["Red", "Yellow", "Green", "Blue"]
+        self.colours = ["red", "yellow", "green", "blue"]
         self.lower_threshold = [ (0, 185, 100), (26,193,100), (57,150,100), (115, 220, 100)]
         self.upper_threshold = [ (10, 255, 255), (40,255,255), (63, 255, 255), (130, 255, 255)]
         self.colour_of_found_item = -1
 
         # Initialize the m00_min
         self.m00 = 0
-        self.m00_min = 1000000
+        self.m00_min = 4000000
 
-
-        self.x = 0.0
-        self.y = 0.0
-        self.theta_z = 0.0
+        # Saving pictures
+        self.waiting_for_image = False
+        self.target_photo_taken = False
+        self.base_image_path = Path("/home/student/catkin_ws/src/team46/snaps")
+        self.base_image_path.mkdir(parents=True, exist_ok=True)
 
         # Map 
         cli = argparse.ArgumentParser(description=f"Command-line interface for the '{self.node_name}' node.")
@@ -176,19 +193,32 @@ class Maze:
             elif front_sensor < 0.23:
                 self.robot_controller.set_move_cmd(-0.08, 0)
 
-            elif self.colour_of_found_item > -1 and front_sensor < 0.6:
-                self.robot_controller.set_move_cmd(-0.05, 1.8)
-                self.robot_controller.publish()
-                time.sleep(1)
+            # A blob was detected
+            elif self.colour_of_found_item > -1 and front_sensor < 0.45:
+     
+                if self.cy < 600:
+                    self.robot_controller.set_move_cmd(0, 0.4)
+
+                elif self.cy > 1100:
+                    self.robot_controller.set_move_cmd(0, -0.4)       
+
+                else:
+                    self.robot_controller.set_move_cmd(0, 0)
+                    self.robot_controller.publish()
+                    time.sleep(0.1)
+                    self.robot_controller.set_move_cmd(-0.05, 1.8)
+                    self.robot_controller.publish()
+                    time.sleep(1)
+                    
                 self.colour_of_found_item = -1
 
             # If there is a wall in the right and front direction
-            elif ( front_sensor < 0.35 and right_sensor < 0.3):
+            elif ( front_sensor < 0.35 and front_right_sensor < 0.3):
                 self.robot_controller.set_move_cmd(0.05, 1.3)
 
-            # If there is a wall in the left and front direction
-            elif ( front_sensor < 0.35 and right_sensor < 0.3):
-                self.robot_controller.set_move_cmd(0.05, -1.3)
+            # # If there is a wall in the left and front direction
+            # elif ( front_sensor < 0.35 and front_left_sensor < 0.3):
+            #     self.robot_controller.set_move_cmd(0.05, -1.3)
 
             # If there is a wall in front of the robot    
             elif (front_sensor < 0.35):
