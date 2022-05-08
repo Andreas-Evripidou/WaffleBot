@@ -62,7 +62,7 @@ class Maze:
 
         hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
             
-        index = 0
+        index = 1
         while index < 4 :
             mask = cv2.inRange(hsv_img, self.lower_threshold[index], 
                 self.upper_threshold[index]) 
@@ -75,7 +75,6 @@ class Maze:
             if self.m00 > self.m00_min:
                 cv2.circle(hsv_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
                 self.colour_of_found_item = index
-                print("Colour found: ", self.colours[self.colour_of_found_item]) 
             index += 1
 
 
@@ -105,7 +104,7 @@ class Maze:
         self.sub_scan = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
         self.cvbridge_interface = CvBridge()
 
-        self.rate = rospy.Rate(10) # hz
+        self.rate = rospy.Rate(20) # hz
 
         # Initialize the Tb3Move class
         self.robot_controller = Tb3Move()
@@ -113,14 +112,14 @@ class Maze:
         self.start = True
 
         # Initialize the target colour
-        self.colours = ["Yellow", "Red", "Green", "Blue"]
-        self.lower_threshold = [(26,193,100), (0, 185, 100),  (57,150,100), (115, 220, 100)]
-        self.upper_threshold = [(40,255,255), (10, 255, 255), (63, 255, 255), (130, 255, 255)]
+        self.colours = ["Red", "Yellow", "Green", "Blue"]
+        self.lower_threshold = [ (0, 185, 100), (26,193,100), (57,150,100), (115, 220, 100)]
+        self.upper_threshold = [ (10, 255, 255), (40,255,255), (63, 255, 255), (130, 255, 255)]
         self.colour_of_found_item = -1
 
         # Initialize the m00_min
         self.m00 = 0
-        self.m00_min = 30000000
+        self.m00_min = 1000000
 
 
         self.x = 0.0
@@ -145,63 +144,74 @@ class Maze:
 
         while not self.ctrl_c:
 
-            front_sensor = np.amin(self.front_arc[75:105])
-            right_sensor = np.amin(self.front_arc[130:145])
-            left_sensor = np.amin(self.front_arc[35:75])  
+            front_sensor = np.amin(self.front_arc[70:115])
+            front_right_sensor = np.amin(self.front_arc[120:145])
+            front_left_sensor = np.amin(self.front_arc[40:85])  
+            right_sensor = np.amin(self.front_arc[170:180])
+            left_sensor = np.amin(self.front_arc[10:20])
 
             # Starting
             # print("Starting...", self.start)
             if self.start:
                 time.sleep(1)
-                right_sensor = np.amin(self.front_arc[130:140])
-
+                right_sensor = np.amin(self.front_arc[160:170])
+                print("Initializing: ", right_sensor)
                 # While there is no wall in the right direction
                 while right_sensor > 0.35:
-                    right_sensor = np.amin(self.front_arc[130:140])
+                    right_sensor = np.amin(self.front_arc[160:170])
+                    print("Thelo tixon: ", right_sensor)
                     self.robot_controller.set_move_cmd(0.05,1)
                     self.robot_controller.publish()
                 self.start = False
             
             # If there is a blob is detected 
-            if self.colour_of_found_item > -1 and front_sensor < 0.5:
+            elif front_sensor < 0.23:
+                self.robot_controller.set_move_cmd(-0.08, 0)
+
+            elif self.colour_of_found_item > -1 and front_sensor < 0.6:
                 print("Colour found: ", self.colours[self.colour_of_found_item])
-                self.robot_controller.set_move_cmd( -0.023, -0.8)
+                self.robot_controller.set_move_cmd(-0.05, 1.8)
                 self.robot_controller.publish()
-                time.sleep(4)
+                time.sleep(1)
                 self.colour_of_found_item = -1
+
+            # If there is a wall in the right and front direction
+            elif ( front_sensor < 0.35 and right_sensor < 0.3):
+                print("Wall found in front and right direction")
+                self.robot_controller.set_move_cmd(0.05, 1.3)
+
+            # If there is a wall in the left and front direction
+            elif ( front_sensor < 0.35 and right_sensor < 0.3):
+                print("Wall found in front and left direction")
+                self.robot_controller.set_move_cmd(0.05, -1.3)
 
             # If there is a wall in front of the robot    
             elif (front_sensor < 0.35):
-                self.robot_controller.set_move_cmd(0,1.0)
+                print("Wall found in front direction")
+                self.robot_controller.set_move_cmd(0 ,1.3)
 
-            # If there is a wall in the right and front direction
-            elif ( front_sensor < 0.4 and right_sensor < 0.4):
-                print("Wall found in front and right direction")
-                self.robot_controller.set_move_cmd(0, 0.7)
-
-            # If there is a wall in the left and front direction
-            elif ( front_sensor < 0.4 and left_sensor < 0.4):
-                print("Wall found in front and left direction")
-                self.robot_controller.set_move_cmd(0, -0.7)
             else:  
 
-                # If there is no wall in the right direction
-                if (right_sensor < 0.3):
+                # If there is wall in the right direction
+                if (front_right_sensor < 0.3):
+                    print("Wall found in right direction")
                     self.robot_controller.set_move_cmd(0.2, 0.5) 
 
                 # Find the wall in the left direction
-                elif (left_sensor < 0.3):
-                    self.robot_controller.set_move_cmd(0.2, -0.7)
+                elif (front_left_sensor < 0.3):
+                    print("Wall found in left direction")
+                    self.robot_controller.set_move_cmd(0.2, -0.5)
 
                 # If there is not wall in the right direction
-                elif (right_sensor > 0.4):
-                    self.robot_controller.set_move_cmd(0.2, -0.7)
+                elif (front_right_sensor > 0.35):
+                    print("I need a right wall")
+                    self.robot_controller.set_move_cmd(0.2, -0.9)
                 
                 # Else, move forward
                 else:
                     self.robot_controller.set_move_cmd(0.25,0.0)
 
-            # if (right_sensor < 0.4):
+            # if (front_right_sensor < 0.4):
             #     self.wall_found = True
             #     self.x = self.robot_odom.posx
             #     self.y = self.robot_odom.posy
