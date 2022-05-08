@@ -15,9 +15,11 @@ from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 
-# Import some package for mapping
-import roslaunch
-from pathlib import Path
+# Import module for accepting arguments from launch file 
+import argparse
+# Import String module
+from std_msgs.msg import String
+
 
 
 class Maze:
@@ -75,21 +77,19 @@ class Maze:
             if self.m00 > self.m00_min:
                 cv2.circle(hsv_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
                 self.colour_of_found_item = index
+
             index += 1
 
-
+    def save_image(image, image_name):
+        full_image_path = base_image_path.joinpath(f"{img_name}.jpg")
+        cv2.imwrite(str(full_image_path), img)
 
     def __init__(self):
 
         self.min_distance = 100
         self.front_arc = np.empty(180)
 
-        # SLAM file path
-        self.map_path =  Path.home().joinpath("catkin_ws/src/team46/maps/task5_map")
-
         self.node_name = "maze_navigator"
-        self.launch = roslaunch.scriptapi.ROSLaunch()
-        self.launch.start()
 
         # Scan 
         self.sub_scan = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
@@ -104,7 +104,7 @@ class Maze:
         self.sub_scan = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
         self.cvbridge_interface = CvBridge()
 
-        self.rate = rospy.Rate(20) # hz
+        self.rate = rospy.Rate(60) # hz
 
         # Initialize the Tb3Move class
         self.robot_controller = Tb3Move()
@@ -125,8 +125,16 @@ class Maze:
         self.x = 0.0
         self.y = 0.0
         self.theta_z = 0.0
+
+        # Map 
+        cli = argparse.ArgumentParser(description=f"Command-line interface for the '{self.node_name}' node.")
+        cli.add_argument("-target_colour", metavar="COL", type=String,
+            default="red", 
+            help="The name of a colour (for example)")
         
-        self.vel_cmd = Twist()
+        # For retriving the argument
+        self.args = cli.parse_args(rospy.myargv()[1:])
+        self.target_colour = self.args.target_colour.data
 
         self.ctrl_c = False
         rospy.on_shutdown(self.shutdownhook)
@@ -136,7 +144,9 @@ class Maze:
         # publish an empty twist message to stop the robot
         # (by default all velocities will be zero):
         print("stopping the robot")
-        self.pub.publish(Twist())
+        self.robot_controller.set_move_cmd(0, 0)
+        self.robot_controller.publish()
+        
         self.ctrl_c = True
     
 
@@ -155,11 +165,9 @@ class Maze:
             if self.start:
                 time.sleep(1)
                 right_sensor = np.amin(self.front_arc[160:170])
-                print("Initializing: ", right_sensor)
                 # While there is no wall in the right direction
                 while right_sensor > 0.35:
                     right_sensor = np.amin(self.front_arc[160:170])
-                    print("Thelo tixon: ", right_sensor)
                     self.robot_controller.set_move_cmd(0.05,1)
                     self.robot_controller.publish()
                 self.start = False
@@ -169,7 +177,6 @@ class Maze:
                 self.robot_controller.set_move_cmd(-0.08, 0)
 
             elif self.colour_of_found_item > -1 and front_sensor < 0.6:
-                print("Colour found: ", self.colours[self.colour_of_found_item])
                 self.robot_controller.set_move_cmd(-0.05, 1.8)
                 self.robot_controller.publish()
                 time.sleep(1)
@@ -177,56 +184,35 @@ class Maze:
 
             # If there is a wall in the right and front direction
             elif ( front_sensor < 0.35 and right_sensor < 0.3):
-                print("Wall found in front and right direction")
                 self.robot_controller.set_move_cmd(0.05, 1.3)
 
             # If there is a wall in the left and front direction
             elif ( front_sensor < 0.35 and right_sensor < 0.3):
-                print("Wall found in front and left direction")
                 self.robot_controller.set_move_cmd(0.05, -1.3)
 
             # If there is a wall in front of the robot    
             elif (front_sensor < 0.35):
-                print("Wall found in front direction")
                 self.robot_controller.set_move_cmd(0 ,1.3)
 
             else:  
 
                 # If there is wall in the right direction
                 if (front_right_sensor < 0.3):
-                    print("Wall found in right direction")
                     self.robot_controller.set_move_cmd(0.2, 0.5) 
 
                 # Find the wall in the left direction
                 elif (front_left_sensor < 0.3):
-                    print("Wall found in left direction")
                     self.robot_controller.set_move_cmd(0.2, -0.5)
 
                 # If there is not wall in the right direction
                 elif (front_right_sensor > 0.35):
-                    print("I need a right wall")
                     self.robot_controller.set_move_cmd(0.2, -0.9)
                 
                 # Else, move forward
                 else:
                     self.robot_controller.set_move_cmd(0.25,0.0)
-
-            # if (front_right_sensor < 0.4):
-            #     self.wall_found = True
-            #     self.x = self.robot_odom.posx
-            #     self.y = self.robot_odom.posy
-
-            # if math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) < 0.05 and math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) > 0:
-
             
-            self.robot_controller.publish()
-
-            node = roslaunch.core.Node(package="map_server",
-                                       node_type="map_server",
-                                       args=f"-f{self.map_path}")
-            # self.launch = self.launch.launch(node)
-
-
+            self.robot_controller.publish()   
 
             self.rate.sleep()
         
