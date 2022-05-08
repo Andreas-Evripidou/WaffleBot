@@ -1,0 +1,10 @@
+<launch>
+  <arg name="target_colour" default="red"/>
+
+  <!-- <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch"/> -->
+  <node pkg="team46" type="exploration.py" name="explore_map"  output="screen" args="-target_colour $(arg target_colour)" >
+  </node>
+  <!-- <node pkg="team46" type="map_save.py" name="save_map"  output="log"> -->
+  <!-- </node> -->
+</launch>
+ 

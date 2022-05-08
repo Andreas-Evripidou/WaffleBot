@@ -15,9 +15,11 @@ from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 
-# Import some package for mapping
-import roslaunch
-from pathlib import Path
+# Import module for accepting arguments from launch file 
+import argparse
+# Import String module
+from std_msgs.msg import String
+
 
 
 class Maze:
@@ -85,12 +87,7 @@ class Maze:
         self.min_distance = 100
         self.front_arc = np.empty(180)
 
-        # SLAM file path
-        self.map_path = Path.home().joinpath("catkin_ws/src/team46/maps/task5_map")
-
         self.node_name = "maze_navigator"
-        self.launch = roslaunch.scriptapi.ROSLaunch()
-        self.launch.start()
 
         # Scan 
         self.sub_scan = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
@@ -126,6 +123,16 @@ class Maze:
         self.x = 0.0
         self.y = 0.0
         self.theta_z = 0.0
+
+        cli = argparse.ArgumentParser(description=f"Command-line interface for the '{self.node_name}' node.")
+        cli.add_argument("-target_colour", metavar="COL", type=String,
+            default="red", 
+            help="The name of a colour (for example)")
+
+        self.args = cli.parse_args(rospy.myargv()[1:])
+
+        self.target_colour = self.args.target_colour.data
+
         
         self.vel_cmd = Twist()
 
@@ -138,11 +145,7 @@ class Maze:
         # (by default all velocities will be zero):
         print("stopping the robot")
         self.pub.publish(Twist())
-        #node = roslaunch.core.Node(package="map_server",
-         #                   node_type="map_saver",
-         #                   args=f"-f {self.map_path}")
-
-        #process = self.launch.launch(node)
+        
         self.ctrl_c = True
     
 
@@ -205,26 +208,8 @@ class Maze:
                 # Else, move forward
                 else:
                     self.robot_controller.set_move_cmd(0.25,0.0)
-
-            # if (right_sensor < 0.4):
-            #     self.wall_found = True
-            #     self.x = self.robot_odom.posx
-            #     self.y = self.robot_odom.posy
-
-            # if math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) < 0.05 and math.sqrt((self.x - self.x0)**2 + (self.y - self.y0)**2) > 0:
-
             
-            self.robot_controller.publish()
-
-            node = roslaunch.core.Node(package="map_server",
-                            node_type="map_saver",
-                            args=f"-f {self.map_path}")
-
-            process = self.launch.launch(node)
-
-            
-
-
+            self.robot_controller.publish()   
 
             self.rate.sleep()
         
