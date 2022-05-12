@@ -74,7 +74,7 @@ class Maze:
 
         hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
             
-        index = 1
+        index = 0
         while index < 4 :
             mask = cv2.inRange(hsv_img, self.lower_threshold[index], 
                 self.upper_threshold[index]) 
@@ -115,12 +115,12 @@ class Maze:
         rospy.loginfo(f"The '{self.node_name}' node is active...")
 
         # Camera
-        self.camera_subscriber = rospy.Subscriber("/camera/rgb/image_raw",
+        self.camera_subscriber = rospy.Subscriber("/camera/color/image_raw",
             Image, self.camera_callback)
         self.sub_scan = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
         self.cvbridge_interface = CvBridge()
 
-        self.rate = rospy.Rate(60) # hz
+        self.rate = rospy.Rate(30) # hz
 
         # Initialize the Tb3Move class
         self.robot_controller = Tb3Move()
@@ -135,13 +135,13 @@ class Maze:
 
         # Initialize the m00_min
         self.m00 = 0
-        self.m00_min = 4000000
+        self.m00_min = 2000000
 
         # Saving pictures
         self.waiting_for_image = False
         self.target_photo_taken = False
         self.base_image_path = Path("/home/student/catkin_ws/src/team46/snaps")
-        self.base_image_path.mkdir(parents=True, exist_ok=True)
+        # self.base_image_path.mkdir(parents=True, exist_ok=True)
 
         # Map 
         cli = argparse.ArgumentParser(description=f"Command-line interface for the '{self.node_name}' node.")
@@ -173,9 +173,11 @@ class Maze:
 
             front_sensor = np.amin(self.front_arc[70:115])
             front_right_sensor = np.amin(self.front_arc[120:145])
-            front_left_sensor = np.amin(self.front_arc[40:85])  
+            front_left_sensor = np.amin(self.front_arc[50:85])  
             right_sensor = np.amin(self.front_arc[170:180])
             left_sensor = np.amin(self.front_arc[10:20])
+
+            
 
             # Starting
             # print("Starting...", self.start)
@@ -183,19 +185,20 @@ class Maze:
                 time.sleep(1)
                 right_sensor = np.amin(self.front_arc[160:170])
                 # While there is no wall in the right direction
-                while right_sensor > 0.35:
+                while  right_sensor < 0.03 or right_sensor > 0.45:
                     right_sensor = np.amin(self.front_arc[160:170])
                     self.robot_controller.set_move_cmd(0.05,1)
                     self.robot_controller.publish()
                 self.start = False
             
             # If there is a blob is detected 
-            elif front_sensor < 0.23:
+            elif front_sensor > 0.13 and front_sensor < 0.35:
+                print("polla konta se tixo")
                 self.robot_controller.set_move_cmd(-0.08, 0)
 
             # A blob was detected
-            elif self.colour_of_found_item > -1 and front_sensor < 0.45:
-     
+            elif self.colour_of_found_item > -1 and front_sensor > 0.13 and front_sensor < 0.6:
+                print("vlepo blob")
                 if self.cy < 600:
                     self.robot_controller.set_move_cmd(0, 0.4)
 
@@ -213,7 +216,8 @@ class Maze:
                 self.colour_of_found_item = -1
 
             # If there is a wall in the right and front direction
-            elif ( front_sensor < 0.35 and front_right_sensor < 0.3):
+            elif ( front_sensor > 0.13 and front_sensor < 0.4 and front_right_sensor > 0.13 and front_right_sensor < 0.4):
+                print("goniaaaa")
                 self.robot_controller.set_move_cmd(0.05, 1.3)
 
             # # If there is a wall in the left and front direction
@@ -221,25 +225,30 @@ class Maze:
             #     self.robot_controller.set_move_cmd(0.05, -1.3)
 
             # If there is a wall in front of the robot    
-            elif (front_sensor < 0.35):
+            elif (front_sensor > 0.13 and front_sensor < 0.4):
+                print("wall mprosta mou")
                 self.robot_controller.set_move_cmd(0 ,1.3)
 
             else:  
 
                 # If there is wall in the right direction
-                if (front_right_sensor < 0.3):
-                    self.robot_controller.set_move_cmd(0.2, 0.5) 
+                if (front_right_sensor > 0.12 and front_right_sensor < 0.4):
+                    print("There is something on my right")
+                    self.robot_controller.set_move_cmd(0.2, 0.6) 
 
                 # Find the wall in the left direction
-                elif (front_left_sensor < 0.3):
-                    self.robot_controller.set_move_cmd(0.2, -0.5)
+                elif ( front_left_sensor > 0.13 and front_left_sensor < 0.4):
+                    print("There is something on my left")
+                    self.robot_controller.set_move_cmd(0.2, -0.6)
 
                 # If there is not wall in the right direction
-                elif (front_right_sensor > 0.35):
+                elif (front_right_sensor < 0.04 or front_right_sensor > 0.5):
+                    print("I need a wall on the right")
                     self.robot_controller.set_move_cmd(0.2, -0.9)
                 
                 # Else, move forward
                 else:
+                    print("pros olotaxooos")
                     self.robot_controller.set_move_cmd(0.25,0.0)
             
             self.robot_controller.publish()   
