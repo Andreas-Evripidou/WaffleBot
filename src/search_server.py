@@ -14,8 +14,8 @@ class FindBox(object):
     result = SearchResult()
 
     def scan_callback(self, scan_data):
-        left_arc = scan_data.ranges[0:21]
-        right_arc = scan_data.ranges[-20:]
+        left_arc = scan_data.ranges[0:31]
+        right_arc = scan_data.ranges[-30:]
         # getting left side point
         self.left_arc_min = np.array(left_arc).min()
         # getting right side point
@@ -35,7 +35,7 @@ class FindBox(object):
 
         self.robot_controller = Tb3Move()
         self.robot_odom = Tb3Odometry()
-        self.arc_angles = np.arange(-20, 21)
+        self.arc_angles = np.arange(-30, 31)
         self.min_distance = 0
         self.left_arc_min = 0
         self.right_arc_min = 0
@@ -70,7 +70,7 @@ class FindBox(object):
         
         
          while self.min_distance > goal.approach_distance:
-             self.robot_controller.set_move_cmd(goal.fwd_velocity, 0.0)
+             self.robot_controller.set_move_cmd(0.26, 0.0)
              self.robot_controller.publish()
              # check if there has been a request to cancel the action mid-way through:
              if self.actionserver.is_preempt_requested():
@@ -82,20 +82,20 @@ class FindBox(object):
                 break
                 # exit the loop:
          # if there is an object to the left side is too close , then turn right
-         while self.left_arc_min <= goal.approach_distance: 
-             self.robot_controller.set_move_cmd(0.0, -0.5)
+         while self.left_arc_min <= goal.approach_distance - 0.02: 
+             self.robot_controller.set_move_cmd(0.0, -1.75)
              self.robot_controller.publish()
              
              
          # if there is an object to the left side is too close, then turn left
-         while self.right_arc_min<=goal.approach_distance:
-             self.robot_controller.set_move_cmd(0.0,0.5)
+         while self.right_arc_min<=goal.approach_distance - 0.02 :
+             self.robot_controller.set_move_cmd(0.0, 1.75)
              self.robot_controller.publish()
 
-        # if there is an object to the left and right side is too close, then 180 degree to the back
-         while self.right_arc_min<=0.85 and self.left_arc_min <= 0.85: 
-             self.robot_controller.set_move_cmd(0.0,1.5)
-             self.robot_controller.publish()
+         #if there is an object to the left and right side is too close, then 180 degree to the back
+         #while self.right_arc_min<=0.85 and self.left_arc_min <= 0.85: 
+             #self.robot_controller.set_move_cmd(0.0,1.5)
+             #self.robot_controller.publish() 
             
 if __name__ == '__main__':
     rospy.init_node("find_box_action_server")
