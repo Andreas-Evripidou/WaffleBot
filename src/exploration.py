@@ -136,7 +136,7 @@ class Maze:
         # Initialize the m00_min
         self.m00 = 0
         self.m00_min = 2000000
-        self.min_wall_dist = 0.35
+        self.min_wall_dist = 0.37
 
         # Saving pictures
         self.waiting_for_image = False
@@ -172,20 +172,23 @@ class Maze:
 
         while not self.ctrl_c:
 
-            front_sensor = np.amin(self.front_arc[75:105])
-            front_right_sensor = np.amin(self.front_arc[135:145])
-            front_left_sensor = np.amin(self.front_arc[50:85])  
-            right_sensor = np.amin(self.front_arc[170:180])
-            left_sensor = np.amin(self.front_arc[10:20])
+            front_sensor = self.front_arc[80:100]
+            front_sensor[ front_sensor == 0] = 20
+            front_sensor = np.amin(front_sensor)
+ 
+            
+            front_right_sensor = self.front_arc[120:145]
+            front_right_sensor[ front_right_sensor == 0] = 20
+            front_right_sensor = np.amin(front_right_sensor) 
+            
 
-            if front_sensor < 0.05:
-                front_sensor = 20
-            if front_right_sensor < 0.05:
-                front_right_sensor = 20
-            if front_left_sensor < 0.05:
-                front_left_sensor = 20
-            if right_sensor < 0.05:
-                right_sensor = 20
+            front_left_sensor = self.front_arc[50:85]
+            front_left_sensor[front_left_sensor == 0] = 20
+            front_left_sensor = np.amin(front_left_sensor)
+                
+            right_sensor = self.front_arc[170:180]
+            right_sensor[right_sensor == 0] = 20
+            right_sensor = np.amin(right_sensor)
             
 
             # Starting
@@ -200,8 +203,8 @@ class Maze:
                 self.start = False
             
             # If there is a blob is detected 
-            elif front_sensor < self.min_wall_dist - 0.5:
-                print("polla konta se tixo")
+            elif front_sensor < self.min_wall_dist - 0.15:
+                print("polla konta se tixo" , front_sensor)
                 self.robot_controller.set_move_cmd(-0.08, 0)
 
             # A blob was detected
@@ -224,28 +227,28 @@ class Maze:
                 self.colour_of_found_item = -1
 
             # If there is a wall in front of the robot    
-            elif ( front_sensor < self.min_wall_dist ):
-                print("wall mprosta mou")
+            elif ( front_sensor < self.min_wall_dist):
+                print("wall mprosta mou", front_sensor)
                 self.robot_controller.set_move_cmd(0, 0)
                 self.robot_controller.publish()
-                self.robot_controller.set_move_cmd(0 ,1.3)
+                self.robot_controller.set_move_cmd(0 ,1.2)
 
             else:  
 
                 # If there is wall in the right direction
-                if (front_right_sensor < self.min_wall_dist  ):
-                    print("There is something on my right")
-                    self.robot_controller.set_move_cmd(0.2, 0.6) 
+                if (front_right_sensor < self.min_wall_dist -0.04 ):
+                    print("There is something on my right ", front_right_sensor)
+                    self.robot_controller.set_move_cmd(0.2, 0.4) 
 
                 # Find the wall in the left direction
                 elif ( front_left_sensor < self.min_wall_dist ):
-                    print("There is something on my left")
+                    print("There is something on my left", front_left_sensor)
                     self.robot_controller.set_move_cmd(0.2, -0.6)
 
                 # If there is not wall in the right direction
-                elif (front_right_sensor > self.min_wall_dist + 1):
-                    print("I need a wall on the right")
-                    self.robot_controller.set_move_cmd(0.2, -0.9)
+                elif (front_right_sensor > self.min_wall_dist + 0.5):
+                    print("I need a wall on the right ", front_right_sensor )
+                    self.robot_controller.set_move_cmd(0.15, -1.2)
             
             self.robot_controller.publish()   
 
