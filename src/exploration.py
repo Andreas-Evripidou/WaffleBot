@@ -172,12 +172,20 @@ class Maze:
 
         while not self.ctrl_c:
 
-            front_sensor = np.amin(self.front_arc[70:115])
-            front_right_sensor = np.amin(self.front_arc[120:145])
+            front_sensor = np.amin(self.front_arc[75:105])
+            front_right_sensor = np.amin(self.front_arc[135:145])
             front_left_sensor = np.amin(self.front_arc[50:85])  
             right_sensor = np.amin(self.front_arc[170:180])
             left_sensor = np.amin(self.front_arc[10:20])
 
+            if front_sensor < 0.05:
+                front_sensor = 20
+            if front_right_sensor < 0.05:
+                front_right_sensor = 20
+            if front_left_sensor < 0.05:
+                front_left_sensor = 20
+            if right_sensor < 0.05:
+                right_sensor = 20
             
 
             # Starting
@@ -185,14 +193,14 @@ class Maze:
                 time.sleep(1)
                 right_sensor = np.amin(self.front_arc[160:170])
                 # While there is no wall in the right direction
-                while  right_sensor < 0.03 or right_sensor > 0.45:
+                while  right_sensor > self.min_wall_dist + 1:
                     right_sensor = np.amin(self.front_arc[160:170])
                     self.robot_controller.set_move_cmd(0.05,1)
                     self.robot_controller.publish()
                 self.start = False
             
             # If there is a blob is detected 
-            elif front_sensor < 0.35:
+            elif front_sensor < self.min_wall_dist - 0.5:
                 print("polla konta se tixo")
                 self.robot_controller.set_move_cmd(-0.08, 0)
 
@@ -215,14 +223,11 @@ class Maze:
                     
                 self.colour_of_found_item = -1
 
-            # If there is a wall in the right and front direction
-            elif (  front_sensor < self.min_wall_dist and front_right_sensor < self.min_wall_dist ):
-                print("goniaaaa")
-                self.robot_controller.set_move_cmd(0.05, 1.3)
-
             # If there is a wall in front of the robot    
             elif ( front_sensor < self.min_wall_dist ):
                 print("wall mprosta mou")
+                self.robot_controller.set_move_cmd(0, 0)
+                self.robot_controller.publish()
                 self.robot_controller.set_move_cmd(0 ,1.3)
 
             else:  
