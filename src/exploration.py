@@ -27,7 +27,7 @@ from std_msgs.msg import String
 
 
 
-class Maze:
+class Explore:
 
     def scan_callback(self, scan_data):
         # From the front of the robot, obtain a 20 degree 
@@ -73,6 +73,11 @@ class Maze:
         cropped_img = cv_img[crop_z0:crop_z0+crop_height + 500, crop_y0:crop_y0+crop_width]
 
         hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
+
+        if not self.initial_photo:
+            img_name = "the_beacon"
+            self.save_image(cv_img, img_name)
+            
             
         index = 0
         while index < 4 :
@@ -106,7 +111,7 @@ class Maze:
         self.min_distance = 100
         self.front_arc = np.empty(180)
 
-        self.node_name = "maze_navigator"
+        self.node_name = "area_navigator"
 
         # Scan 
         self.sub_scan = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
@@ -126,6 +131,7 @@ class Maze:
         self.robot_controller = Tb3Move()
         self.robot_odom = Tb3Odometry()
         self.start = True
+        self.initial_photo = False
 
         # Initialize the target colour
         self.colours = ["red", "yellow", "green", "blue"]
@@ -196,13 +202,13 @@ class Maze:
                 time.sleep(1)
                 right_sensor = np.amin(self.front_arc[160:170])
                 # While there is no wall in the right direction
-                while  right_sensor > self.min_wall_dist + 1:
+                while  right_sensor > self.min_wall_dist: #right_sensor > self.min_wall_dist + 1:
                     right_sensor = np.amin(self.front_arc[160:170])
                     self.robot_controller.set_move_cmd(0.05,1)
                     self.robot_controller.publish()
                 self.start = False
             
-            # If there is a blob is detected 
+            # If a blob is detected 
             elif front_sensor < self.min_wall_dist - 0.15:
                 print("polla konta se tixo" , front_sensor)
                 self.robot_controller.set_move_cmd(-0.08, 0)
@@ -257,8 +263,8 @@ class Maze:
         
     
 if __name__ == '__main__':
-    maze_instance = Maze()
+    explore_instance = Explore()
     try:
-        maze_instance.main_loop()
+        explore_instance.main_loop()
     except rospy.ROSInterruptException:
         pass

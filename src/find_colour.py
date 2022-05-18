@@ -17,7 +17,6 @@ from tb3 import Tb3Move, Tb3Odometry
 
 #Import laserscan for wall following algorithm
 from sensor_msgs.msg import LaserScan
-from tf.transformations import euler_from_quaternion
 
 class colour_search(object):
 
@@ -69,10 +68,6 @@ class colour_search(object):
 
         self.rate = rospy.Rate(5)
 
-        # variables to use for the "reference position":
-        self.x0 = 0.0
-        self.y0 = 0.0
-        self.theta_z0 = self.robot_odom.yaw
         self.colours = ["Turqoise", "Yellow", "Red", "Green", "Purple", "Blue"]
         
         # For making sure we run the code only at the start
@@ -80,6 +75,7 @@ class colour_search(object):
         self.target_colour = -1
         self.seeing_beacon = False
         self.ready_to_beaconing = False
+        self.beaconing_message_published = False
 
         self.m00 = 0
         self.m00_min = 10000
@@ -126,7 +122,7 @@ class colour_search(object):
                 if self.m00 > self.m00_min:
                     cv2.circle(hsv_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
                     self.target_colour = index
-                    print("Colour found: ", self.colours[self.target_colour]) 
+                    #print("Colour found: ", self.colours[self.target_colour]) 
                 index += 1
 
                 
@@ -156,99 +152,107 @@ class colour_search(object):
             min_front_side = np.amin(self.front_arc[75:105])
 
             if not self.target_found :
-                print("I am initializing")
+                #print("I am initializing")
                 time.sleep(1)
 
                 # Turn right
-                print("I am turning right")
-                self.robot_controller.set_move_cmd(0, -1.3)
+                #print("I am turning right")
+                self.robot_controller.set_move_cmd(0, -1)
                 self.robot_controller.publish()
-                time.sleep(1.2)
+                time.sleep(2)
                 self.robot_controller.set_move_cmd(0, 0)
                 self.robot_controller.publish()
                 time.sleep(0.5)
 
                 # Find target color
-                print("I am finding the target colour")
+                #print("I am finding the target colour")
                 self.target_found = True
 
                 # Turn left
-                print("I am turning left")
-                self.robot_controller.set_move_cmd(0, 1.3)
+                #print("I am turning left")
+                self.robot_controller.set_move_cmd(0, 1)
                 self.robot_controller.publish()
-                time.sleep(1.2)
+                time.sleep(2)
                 self.robot_controller.set_move_cmd(0, 0)
                 self.robot_controller.publish() 
                 time.sleep(0.5)
-                print("Colour found: ", self.colours[self.target_colour]) 
+                print("SEARCH INITIATED: The target beacon colour is", self.colours[self.target_colour],"\b.") 
                 
-                print("Fkeno ekso")
-                self.robot_controller.set_move_cmd(0.26, 0)
+                #print("Fkeno ekso")
+                self.robot_controller.set_move_cmd(0.2, 0)
                 self.robot_controller.publish()
                 time.sleep(2.5)
 
                 test = np.amin(self.front_arc[175:180]) 
 
-                print(test)
+                #print(test)
                 if test > 0.65:
-                    print("en esiei tixo aristera are pao deksia")
+                    #print("en esiei tixo aristera are pao deksia")
                     self.robot_controller.set_move_cmd(0, -1.82)
                     self.robot_controller.publish()
                     time.sleep(1)
                     self.robot_controller.set_move_cmd(0.26, 0)
                     self.robot_controller.publish()
                     time.sleep(3.5)
-                    self.robot_controller.set_move_cmd(0.1, 1.0)
-                    self.robot_controller.publish()
-                    time.sleep(1)
+                    # self.robot_controller.set_move_cmd(0.1, 1.0)
+                    # self.robot_controller.publish()
+                    # time.sleep(1)
 
 
                 self.ready_to_beaconing = True
-                print ("kamno beaconing")
+                #print ("kamno beaconing")
             
 
             if self.seeing_beacon:
                 if self.cz > 265 and min_front_side < 0.5:
-                    print("We fucking did it")
-                    print ("to cz: ",self.cz," To cy: ", self.cy, " To front: ", min_front_side)
+                    print("BEACONING COMPLETE: The robot has now stopped.")
+                    #print ("to cz: ",self.cz," To cy: ", self.cy, " To front: ", min_front_side)
                     self.ctrl_c = True        
                 else:
                     if (min_front_side < 0.35):
-                        print ("mprosta tixos")
-                        print ("to cz: ",self.cz," To cy: ", self.cy, " To front: ", min_front_side)
+                        #print ("mprosta tixos")
+                        #print ("to cz: ",self.cz," To cy: ", self.cy, " To front: ", min_front_side)
                         self.robot_controller.set_move_cmd(-0.15, -0.8)
                     elif(min_right_side < 0.45):
-                        print ("deksi tixos")
+                        #print ("deksi tixos")
                         self.robot_controller.set_move_cmd(0.14, 0.9)
                         
                     elif(min_left_side < 0.4):
-                        print ("arister tixos")
+                        #print ("arister tixos")
                         self.robot_controller.set_move_cmd(0.08, -0.7)
                     else:
                         if self.cy >= 650 and self.cy <= 800:
-                            print("Vlepo to sto kentro")
+                            if not self.beaconing_message_published:
+                                self.beaconing_message_published = True
+                                print("TARGET DETECTED: Beaconing initiated.")
                             self.robot_controller.set_move_cmd(0.26, 0)
                             self.robot_controller.publish()
 
                         elif self.cy < 650:
-                            print("Vlepo to sto aristera mou")
+                            #print("Vlepo to sto aristera mou")
+                            if not self.beaconing_message_published:
+                                self.beaconing_message_published = True
+                                print("TARGET DETECTED: Beaconing initiated.")
                             self.robot_controller.set_move_cmd(0.26, 0.4)
                             self.robot_controller.publish()
                         elif self.cy > 800:
-                            print("Vlepo to sto dexia mou")
+                            #print("Vlepo to sto dexia mou")
+                            if not self.beaconing_message_published:
+                                self.beaconing_message_published = True
+                                print("TARGET DETECTED: Beaconing initiated.")
                             self.robot_controller.set_move_cmd(0.26, -0.4)
             elif (min_front_side < 0.8) and min_left_side > 0.4:
-                print ("ivra tixo mprosta")
+                #print ("ivra tixo mprosta")
                 self.robot_controller.set_move_cmd(0.2, 1.5)
             else:        
                 if(min_right_side > 0.5 and min_right_side < 0.6):
-                    print("Thelo dexio tixo")
+                    #print("Thelo dexio tixo")
                     self.robot_controller.set_move_cmd(0.26, 0.1)
                 elif(min_right_side < 0.5):
-                    print("eimai polla konta dexia")
+                    #print("eimai polla konta dexia")
                     self.robot_controller.set_move_cmd(0.26, 1.1)
                 elif(min_right_side > 0.6):
-                    print("eimai polla makria dexia")
+                    #print("eimai polla makria dexia")
                     self.robot_controller.set_move_cmd(0.26, -0.8)
             self.robot_controller.publish()
 
