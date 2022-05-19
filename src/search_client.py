@@ -51,7 +51,7 @@ class SearchClient(object):
         self.client.send_goal(self.goal, feedback_cb=self.feedback_callback)
 
     def main(self):
-        self.send_goal(velocity = 0.26, approach = 0.60)
+        self.send_goal(velocity = 0.26, approach = 0.75)
         StartTime = rospy.get_rostime()
         print("the robot will now move for 90 seconds...")
         while self.client.get_state() < 2:
