@@ -135,8 +135,8 @@ class Explore:
 
         # Initialize the target colour
         self.colours = ["red", "yellow", "green", "blue"]
-        self.lower_threshold = [ (0, 185, 100), (26,193,100), (57,150,100), (115, 220, 100)]
-        self.upper_threshold = [ (10, 255, 255), (40,255,255), (63, 255, 255), (130, 255, 255)]
+        self.lower_threshold = [ (145, 80, 100), (23,102,100), (81,60,100), (97, 62, 100)]
+        self.upper_threshold = [ (180, 247, 255), (28,176,255), (101, 256, 255), (103, 256, 255)]
         self.colour_of_found_item = -1
 
         # Initialize the m00_min
