@@ -255,6 +255,10 @@ class Explore:
                 elif (front_right_sensor > self.min_wall_dist + 0.5):
                     print("I need a wall on the right ", front_right_sensor )
                     self.robot_controller.set_move_cmd(0.15, -1.2)
+
+                else:
+                    self.robot_controller.set_move_cmd(0.10, 0.0)
+
             
             self.robot_controller.publish()   
 
