@@ -11,10 +11,7 @@ class SearchClient(object):
     def feedback_callback(self, feedback_data:SearchFeedback):
         self.distance_travelled = feedback_data.current_distance_travelled
         print(f"FEEDBACK: Current distance: {self.distance_travelled:.1f} meters. ")
-        if self.x < 100:
-            self.x += 1
-        else:
-            self.x = 0
+
 
 
     def __init__(self):
@@ -33,9 +30,6 @@ class SearchClient(object):
         self.ctrl_c = False
         rospy.on_shutdown(self.shutdown_ops)
 
-        self.distance = 0.0
-
-        self.x = 0
 
     def shutdown_ops(self):
          if not self.action_complete:

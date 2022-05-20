@@ -69,11 +69,23 @@ class FindBox(object):
         while success :
         
         
-         while self.min_distance > goal.approach_distance:
-             self.robot_controller.set_move_cmd(0.26, 0.0)
+         if self.min_distance >= goal.approach_distance:
+             self.robot_controller.set_move_cmd(0.26, 0.04)
              self.robot_controller.publish()
              # check if there has been a request to cancel the action mid-way through:
-             if self.actionserver.is_preempt_requested():
+             
+         # if there is an object to the left side is too close , then turn right
+         elif self.left_arc_min <= goal.approach_distance - 0.265: 
+             self.robot_controller.set_move_cmd(0.01, -1.6)
+             self.robot_controller.publish()
+             
+             
+         # if there is an object to the left side is too close, then turn left
+         elif self.right_arc_min <=goal.approach_distance -0.265 :
+             self.robot_controller.set_move_cmd(0.01, 1.6)
+             self.robot_controller.publish()
+
+         if self.actionserver.is_preempt_requested():
                 rospy.loginfo("Cancelling the search.")
                 self.actionserver.set_preempted()
                 # stop the robot:
@@ -81,16 +93,6 @@ class FindBox(object):
                 success = False
                 break
                 # exit the loop:
-         # if there is an object to the left side is too close , then turn right
-         while self.left_arc_min <= goal.approach_distance: 
-             self.robot_controller.set_move_cmd(0.1, -1.86)
-             self.robot_controller.publish()
-             
-             
-         # if there is an object to the left side is too close, then turn left
-         while self.right_arc_min<=goal.approach_distance:
-             self.robot_controller.set_move_cmd(0.1, 1.86)
-             self.robot_controller.publish()
 
         
             
